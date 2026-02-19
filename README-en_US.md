@@ -3,19 +3,23 @@
 ## Install GitOps Operator
 
 ### Find out the channel to be used: 
+```sh
+$ oc get packagemanifests.packages.operators.coreos.com -n openshift-marketplace openshift-gitops-operator -o jsonpath='{.status.defaultChannel}{"\n"}'
 ```
-oc get packagemanifests.packages.operators.coreos.com -n openshift-marketplace openshift-gitops-operator -o jsonpath='{.status.defaultChannel}{"\n"}'
-```
+
 The output should show one or more values, like: 
-> [lab-user@bastion ~]$ oc get packagemanifests.packages.operators.coreos.com -n openshift-marketplace openshift-gitops-operator -o jsonpath='{.status.defaultChannel}{"\n"}'<br>
-> **latest**<br>
-> [lab-user@bastion ~]$ <br>
+
+```sh
+$  oc get packagemanifests.packages.operators.coreos.com -n openshift-marketplace openshift-gitops-operator -o jsonpath='{.status.defaultChannel}{"\n"}'
+
+latest
+```
 
 ### Create the subscriptions: 
 Using this channel value, create the subscription manifest for Installing the OpenShift GitOps Operator as shown below. Instead of creating a new namespace and operatorgroup, the default created namespace called "openshift-operators" can be used as the GitOps operator supports All Namespace as targets: 
 
-```
-cat << EOF | oc apply -f -
+```sh
+$ cat << EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -38,28 +42,31 @@ Since we want to create various resources with the objective of understanding th
 
 Use the following command to give this service account cluster wide admin role: 
 
-```
-oc create clusterrolebinding gitops-scc-binding --clusterrole cluster-admin  --serviceaccount openshift-gitops:openshift-gitops-argocd-application-controller
+```sh
+$ oc create clusterrolebinding gitops-scc-binding --clusterrole cluster-admin  --serviceaccount openshift-gitops:openshift-gitops-argocd-application-controller
 ```
 
 ### Verify if Operator is correctly installed: 
 
 Following two commands can be used to ensure that the operator installation has been accepted and has been successful: 
-```
-[lab-user@bastion ~]$ oc get operators openshift-gitops-operator.openshift-operators 
+```sh
+$ oc get operators openshift-gitops-operator.openshift-operators 
 NAME                                            AGE
 openshift-gitops-operator.openshift-operators   2m40s
-[lab-user@bastion ~]$ oc get csv -n openshift-operators | grep gitops
+```
+
+```sh
+$ oc get csv -n openshift-operators | grep gitops
 openshift-gitops-operator.v1.12.0   Red Hat OpenShift GitOps   1.12.0    openshift-gitops-operator.v1.11.2   **Succeeded**
-[lab-user@bastion ~]$
 ```
+
 Additionally, to verify if the deployment for the operator is healthy, use the following: 
-```
-oc get deployment -n openshift-gitops
+```sh
+$ oc get deployment -n openshift-gitops
 ```
 output should show all deployments are running successfully, as shown here: 
-```
-oc get deployment -n openshift-gitops
+```sh
+$ oc get deployment -n openshift-gitops
 NAME                                         READY   UP-TO-DATE   AVAILABLE   AGE
 cluster                                      1/1     1            1           8m10s
 kam                                          1/1     1            1           8m10s
@@ -75,16 +82,16 @@ To access the GUI, you will need a URL and credentials. These can be retrieved u
 
 ### Get Routes:
 To find the URL to access, use the following command: 
-```
-oc get -n openshift-gitops routes openshift-gitops-server -o jsonpath='{.status.ingress[].host}{"\n"}'
+```sh
+$ oc get -n openshift-gitops routes openshift-gitops-server -o jsonpath='{.status.ingress[].host}{"\n"}'
 ```
 Output will be similar to: 
 > openshift-gitops-server-openshift-gitops.apps.cluster-jl57k.dynamic.redhatworkshops.io
 
 ### Get Secret: 
 The default user name is `admin`, and the password for that admin user can be retrieved using the following:
-```
-oc get -n openshift-gitops secrets openshift-gitops-cluster -o jsonpath='{.data.admin\.password}' | base64 -d ; echo
+```sh
+$ oc get -n openshift-gitops secrets openshift-gitops-cluster -o jsonpath='{.data.admin\.password}' | base64 -d ; echo
 ```
 output will be similar to:
 > DVqetLgGo30UCNb1pm4X8JnAPQShRyEx
@@ -105,8 +112,8 @@ The GitOps Operator defines a CR called "Applications". Applications are used to
 ### Your first application: 
 Let's create a simple application that will create a namespace and run a pod in that namespace. The manifests for these have already been defined [here](https://github.com/jovemfelix/ocp-gitops/tree/main/manifests/set0). All the application has to do is point to the repository and let GitOps do its magic. Create the application as shown here:
 
-```
-cat << EOF | oc apply -f -
+```sh
+$ cat << EOF | oc apply -f -
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
