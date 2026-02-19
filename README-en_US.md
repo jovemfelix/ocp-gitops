@@ -103,7 +103,7 @@ The GitOps Operator defines a CR called "Applications". Applications are used to
 > **TIP** OpenShift GitOps Operator is the productized version of "ArgoCD". Hence the terms are used interchangeably
 
 ### Your first application: 
-Let's create a simple application that will create a namespace and run a pod in that namespace. The manifests for these have already been defined [here](https://github.com/git-shassan/ocp-gitops/tree/main/manifests/set0). All the application has to do is point to the repository and let GitOps do its magic. Create the application as shown here:
+Let's create a simple application that will create a namespace and run a pod in that namespace. The manifests for these have already been defined [here](https://github.com/jovemfelix/ocp-gitops/tree/main/manifests/set0). All the application has to do is point to the repository and let GitOps do its magic. Create the application as shown here:
 
 ```
 cat << EOF | oc apply -f -
@@ -121,7 +121,7 @@ spec:
     directory:
       recurse: true
     path: manifests/set0
-    repoURL: https://github.com/git-shassan/ocp-gitops.git
+    repoURL: https://github.com/jovemfelix/ocp-gitops.git
     targetRevision: main
   syncPolicy:
     automated:
@@ -135,31 +135,32 @@ EOF
 ### Verifying Application's status using OC command:
 Once the application is created, you can view its status progress as seen here:
 
-```
-oc get apps -n openshift-gitops first-app 
+```sh
+$ oc get apps -n openshift-gitops first-app 
 NAME        SYNC STATUS   HEALTH STATUS
 first-app   Synced        Progressing
+
 ## pause a few seconds
-oc get apps -n openshift-gitops first-app 
+$ oc get apps -n openshift-gitops first-app 
 NAME        SYNC STATUS   HEALTH STATUS
 first-app   Synced        Healthy
 ```
 The application's `Healthy` status indicates that the namespace and pod have been created successfully. Confirm this as shown here:
 
-```
-oc get pods -n first-gitops-space
+```sh
+$ oc get pods -n first-gitops-space
 NAME   READY   STATUS    RESTARTS   AGE
 pod    1/1     Running   0          4m15s
 ```
 You can try deleting this pod, but since Git is the source of truth, and the pod definition still exists on Git, the pod will get recreated as shown here: 
 
-```
-[lab-user@bastion ~]$ oc delete pods -n first-gitops-space pod 
+```sh
+$ oc delete pods -n first-gitops-space pod 
 pod "pod" deleted
-[lab-user@bastion ~]$ oc get pods -n first-gitops-space
+
+$ oc get pods -n first-gitops-space
 NAME   READY   STATUS    RESTARTS   AGE
 pod    1/1     Running   0          3s
-[lab-user@bastion ~]$
 ```
 
 ### Verifying Application status using GUI:
@@ -182,8 +183,8 @@ Combining these sorting mechanisms, the GitOps operator uses the following order
 
 ### More about Sync Phases: 
 
-The Phase is defined a Manifest under `.metadata.annotations.argocd.argoproj.io/hookFor` Example: 
-```
+The Phase is defined a Manifest under `.metadata.annotations.argocd.argoproj.io/hook` Example: 
+```yaml
 metadata: 
   annotations: 
     argocd.argoproj.io/hook: PreSync
@@ -195,7 +196,7 @@ The purpose of the phase types is:
 
 The following figure demonstrates this concept visually: 
 
-<img width="389" alt="image" src="https://github.com/git-shassan/ocp-gitops/assets/84737596/f3382698-6962-4d48-a466-1fa89b7b9a0b">
+![concept_1](images/concept_1.png)
 
 (Figure sourced from this ![site](https://redhat-scholars.github.io/argocd-tutorial/argocd-tutorial/04-syncwaves-hooks.html))
 
@@ -203,8 +204,8 @@ A SyncFail phase is also defined, and the resources are applied if Sync fails
 
 ### More about SyncWaves: 
 
-All manifests have a wave of zero by default. Wave value can be set using `metadata.annotations.argocd.argoproj.io/sync-wave`. The wave can also be negative as well. For example: metadata:
-```
+All manifests have a wave of zero by default. Wave value can be set using `metadata.annotations.argocd.argoproj.io/sync-wave`. The wave can also be negative as well. For example: metadata:
+```yaml
     annotations:
       argocd.argoproj.io/sync-wave: "-203"
 ```
@@ -214,17 +215,17 @@ Argo CD won’t apply the next manifest until the previous reports are "healthy"
 
 The following figure demonstrates this concept visually: 
 
-<img width="315" alt="image" src="https://github.com/git-shassan/ocp-gitops/assets/84737596/21192d7c-4507-4d35-8972-128c93d2c378">
+![concept_2](images/concept_2.png)
 
 (Figure sourced from this ![site](https://redhat-scholars.github.io/argocd-tutorial/argocd-tutorial/04-syncwaves-hooks.html))
 
 ## Create an Application to demonstrate SyncWaves:
 
 To create an application demonstrating Sync Waves, use the following:
-```
-mkdir ~/gitops
-cd ~/gitops
-cat << EOF > app1.yaml
+```sh
+$ mkdir ~/gitops
+$ cd ~/gitops
+$ cat << EOF > app1.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -241,7 +242,7 @@ spec:
     directory:
       recurse: true
     path: manifests/set1
-    repoURL: https://github.com/git-shassan/ocp-gitops.git
+    repoURL: https://github.com/jovemfelix/ocp-gitops.git
     targetRevision: main
   syncPolicy:
     automated:
@@ -269,8 +270,8 @@ This application will demonstrate the use of SyncWaves. The applications being c
 
 
 Run the application using the following command: 
-```
-oc apply -f app1.yaml 
+```sh
+$ oc apply -f app1.yaml 
 ```
 Now observe that the application shows up on ArgoCD's GUI: 
 
@@ -289,8 +290,8 @@ Eventually, the application reaches a full sync status once all resources have r
 ![gitops_4](images/gitops_4.png)
 
 As a final step, check the status of applications using CLI:
-```
-oc get applications.argoproj.io -n openshift-gitops experiment-app1
+```sh
+$ oc get applications.argoproj.io -n openshift-gitops experiment-app1
 ```
 Output will show the new application: 
 
@@ -300,8 +301,8 @@ Output will show the new application:
 
 ## Running ArgoCD Applications to demonstrate Phase Hooks:
 Now to demonstrate the use of `Phases`, let's create another Application using the following: 
-```
-cat << EOF > app2.yaml
+```sh
+$ cat << EOF > app2.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -318,7 +319,7 @@ spec:
     directory:
       recurse: true
     path: manifests/set2
-    repoURL: https://github.com/git-shassan/ocp-gitops.git
+    repoURL: https://github.com/jovemfelix/ocp-gitops.git
     targetRevision: main
   syncPolicy:
     automated:
@@ -342,8 +343,8 @@ This application will demonstrate the use of SyncWaves. The applications being c
 | powerpod.yaml | Job | testjob1 | argotest2 | Sync | 103 | presync2 will never complete, so this job will never start | 
 
 Now run the job using:
-```
-oc apply -f app2.yaml 
+```sh
+$ oc apply -f app2.yaml 
 ```
 
 Looking at the ArgoCD GUI, you will see that the job `presync1` is running and the other ones are waiting. This job had the lowest priority among the Pre-Sync phased jobs. As shown here, the logs of this job (visible by clicking on the job, and switching to `logs` tab), show that the counter is still running: 
@@ -361,12 +362,10 @@ The job will never finish as it has an infinite loop defined in the pod, and hen
 
 As a result, this application will never reach a "Healthy" and "Sync" status. We can see that in the GUI, and also through CLI: 
 
-```
-oc get applications.argoproj.io -n openshift-gitops experiment-app2 
+```sh
+$ oc get applications.argoproj.io -n openshift-gitops experiment-app2 
 ``` 
 will show: 
 
 > NAME&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SYNC&nbsp;STATUS&nbsp;&nbsp;&nbsp;HEALTH&nbsp;STATUS<br>
 > experiment-app2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OutOfSync&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Missing
-
-
